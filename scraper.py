@@ -13,7 +13,7 @@ def write_file(contents, outname):
 def make_selenium_request(URL):
 	options = Options()
 	options.add_argument("--headless")
-	driver = webdriver.Firefox(os.getcwd(), firefox_options=options)
+	driver = webdriver.Firefox(os.getcwd(), options=options)
 	driver.get(URL)
 	return driver.page_source
 
