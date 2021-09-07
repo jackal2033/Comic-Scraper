@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup as bs
 import os
 import sys
 from requests import get
+from re import sub
+import html
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 def write_file(contents, outname):
 	with open(outname, 'w') as outfile:
@@ -13,6 +16,8 @@ def write_file(contents, outname):
 def make_selenium_request(URL):
 	options = Options()
 	options.add_argument("--headless")
+	options.binary=r"C:\Program Files\Mozilla Firefox\firefox.exe"
+
 	driver = webdriver.Firefox(os.getcwd(), options=options)
 	driver.get(URL)
 	return driver.page_source
@@ -45,21 +50,18 @@ def fetch_images(soup, out_dir):
 		with open(complete_path, 'wb') as outfile:
 			with get(image_list[i]) as url_image:
 				outfile.write(url_image.content)
-		
-	return
 
 def fetch_title(soup):
 	album_title = soup.find('h1', {'class' : 'loadedComicHeader'}).text.strip()
+	album_title = sub('[:-<>.\"\'\\\/\|\*?]', '' , album_title)
 	return album_title
 
 def debug_program():
-	if not os.path.exists("debug.html"):
-		request_url = sys.argv[1]
+	for URL in sys.argv[1:]:
+		print(URL)
+		request_url = URL.strip()
 		req = make_selenium_request(request_url)
 		soup = bs(req, 'lxml')
-		write_file(soup.prettify(), "debug.html")
-	with open ("debug.html", 'r') as infile:
-		soup = bs(infile.read(), 'lxml')
 		source_dir = os.path.expanduser('~') + r'\Documents\Mangas\\' + fetch_title(soup)
 		if not os.path.exists(source_dir):
 			os.makedirs(source_dir)
@@ -70,4 +72,22 @@ def fetch_page_source():
 	if not os.path.exists(source_dir):
 		os.makedirs(source_dir)
 	
-debug_program()
+def main():
+	with open ("mangas.txt", 'r') as infile:
+		for url_line in infile:
+			URL = url_line.strip("\n")
+			print([URL])
+			page_source = make_selenium_request(URL)
+			soup = bs(page_source, 'lxml')
+			try:
+				source_dir = os.path.expanduser('~') + r'\Documents\Mangas\\' + fetch_title(soup)
+			except:
+				with open("debug.html", 'w') as debug_file:
+					debug_file.write(soup.prettify())
+					exit()
+			if not os.path.exists(source_dir):
+				os.makedirs(source_dir)
+			fetch_images(soup, source_dir)
+
+if __name__ == "__main__":
+	debug_program()
